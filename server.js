@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath( import.meta.url );
 const __dirname = path.dirname( __filename );
+const isDev = process.env.NODE_ENV !== 'production';
 
 
 const app = express();
@@ -87,10 +88,12 @@ app.use( cors() );
 app.use( express.json( { limit: '50mb' } ) );
 
 app.use( cors( {
-    origin: [ 'http://localhost:3000', 'https://extraer-mtdatos-online.netlify.app/' ],
+    origin: [
+        'http://localhost:3000',
+        'https://extraer-mtdatos-online.netlify.app/'
+    ],
     credentials: true
 } ) );
-
 // Servir archivos estáticos
 app.use( express.static( 'public' ) );
 
@@ -106,14 +109,23 @@ const queue = new pQueue( { concurrency: 3 } );
 
 // Inicialización del navegador
 async function initBrowser() {
-    if ( !browser ) {
-        browser = await chromium.puppeteer.launch( {
+    const options = isDev
+        ? {
+            args: [ '--no-sandbox' ],
+            headless: 'new'
+        }
+        : {
             args: chromium.args,
-            defaultViewport: chromium.defaultViewport,
             executablePath: await chromium.executablePath,
-            headless: chromium.headless,
-            ignoreHTTPSErrors: true,
-        } );
+            headless: chromium.headless
+        };
+
+    try {
+        browser = await puppeteer.launch( options );
+        console.log( 'Browser initialized successfully' );
+    } catch ( error ) {
+        console.error( 'Failed to initialize browser:', error );
+        throw error;
     }
 }
 
@@ -313,4 +325,4 @@ async function startServer() {
     }
 }
 
-startServer();
+export default startServer();
