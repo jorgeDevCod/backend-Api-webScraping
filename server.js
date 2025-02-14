@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000;
 let browser;
 
 // Configuración de caché
-import NodeCache from 'node-cache';
+import NodeCache from '';
 const metaCache = new NodeCache( { stdTTL: 3600 } ); // 1 hora de caché
 
 // Middleware de sanitización de URLs
