@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import puppeteer from 'puppeteer';
+import chromium from 'chrome-aws-lambda';
 import pQueue from 'p-queue';
 import validator from 'validator';
 import path from 'path';
@@ -19,7 +20,7 @@ const PORT = process.env.PORT || 3000;
 let browser;
 
 // Configuración de caché
-import NodeCache from '';
+import NodeCache from 'node-cache';
 const metaCache = new NodeCache( { stdTTL: 3600 } ); // 1 hora de caché
 
 // Middleware de sanitización de URLs
@@ -46,13 +47,17 @@ app.use( helmet( {
             styleSrc: [ "'self'", "'unsafe-inline'", "https://fonts.googleapis.com" ],
             fontSrc: [ "'self'", "https://fonts.gstatic.com" ],
             imgSrc: [ "'self'", "data:", "https:" ],
-            connectSrc: [ "'self'" ] // Removed localhost:3000 unless absolutely necessary
+            connectSrc: [ "'self'" ]
         }
     },
     crossOriginEmbedderPolicy: false
 } ) );
 
-app.use( cors() );
+app.use( cors( {
+    origin: '*', // Temporalmente para pruebas
+    methods: [ 'GET', 'POST' ],
+    credentials: true
+} ) );
 app.use( express.json( { limit: '50mb' } ) );
 app.use( express.static( 'public' ) );
 app.use( '/api/', rateLimit( { windowMs: 15 * 60 * 1000, max: 100 } ) ); // Rate limiting
@@ -65,6 +70,14 @@ app.get( "/", ( req, res ) => {
     res.json( { message: "API funcionando en Vercel" } );
 } );
 
+app.get( '/api/test', async ( req, res ) => {
+    try {
+        res.json( { status: 'API is working' } );
+    } catch ( error ) {
+        res.status( 500 ).json( { error: error.message } );
+    }
+} );
+
 app.use( ( err, req, res, next ) => {
     console.error( err.stack );
     res.status( 500 ).json( { error: 'Internal server error', message: err.message } );
@@ -72,6 +85,11 @@ app.use( ( err, req, res, next ) => {
 
 app.use( cors() );
 app.use( express.json( { limit: '50mb' } ) );
+
+app.use( cors( {
+    origin: [ 'http://localhost:3000', 'https://extraer-mtdatos-online.netlify.app/' ],
+    credentials: true
+} ) );
 
 // Servir archivos estáticos
 app.use( express.static( 'public' ) );
@@ -89,20 +107,17 @@ const queue = new pQueue( { concurrency: 3 } );
 // Inicialización del navegador
 async function initBrowser() {
     if ( !browser ) {
-        browser = await puppeteer.launch( {
-            headless: 'new',
-            args: [
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
+        browser = await chromium.puppeteer.launch( {
+            args: chromium.args,
+            defaultViewport: chromium.defaultViewport,
+            executablePath: await chromium.executablePath,
+            headless: chromium.headless,
+            ignoreHTTPSErrors: true,
         } );
     }
 }
 
-// Función para extraer meta tags
+
 async function createPage() {
     const page = await browser.newPage();
     await page.setDefaultNavigationTimeout( 30000 );

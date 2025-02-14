@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "chrome-aws-lambda": "^10.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
@@ -8,13 +9,14 @@
     "node-cache": "^5.1.2",
     "p-queue": "^8.1.0",
     "puppeteer": "^24.2.1",
+    "puppeteer-core": "^10.1.0",
     "validator": "^13.12.0"
   },
   "scripts": {
     "start": "node server.js",
     "nodemon": "nodemon  server.js"
   },
-  "name": "backend-API-Scraping",
+  "name": "API-Scraping-for-metadata",
   "version": "1.0.0",
   "main": "server.js",
   "type": "module",
